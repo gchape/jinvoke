@@ -15,7 +15,6 @@ public class RpcServer {
     }
 
     public void start() {
-        // Boss group accepts incoming connections; worker group handles I/O for established channels
         var boss = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
         var worker = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
 
@@ -31,15 +30,16 @@ public class RpcServer {
                         protected void initChannel(SocketChannel ch) {
                             // TODO
                         }
+
                     });
 
-            var fut = server.bind(8888);
-            // Block the current thread until the server channel is closed
-            fut.channel().closeFuture().sync();
+            server.bind(8888)
+                    .channel()
+                    .closeFuture()
+                    .sync();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
-            // Gracefully shut down event loop groups to release threads and resources
             boss.shutdownGracefully();
             worker.shutdownGracefully();
         }
