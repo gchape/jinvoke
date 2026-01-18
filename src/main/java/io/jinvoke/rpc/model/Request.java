@@ -5,8 +5,10 @@ import java.io.Serializable;
 public final class Request implements Message.Payload, Serializable {
     private final String id;
     private final String clientId;
+
     private final String className;
     private final String methodName;
+
     private final Object[] params;
     private final String[] paramTypes;
     private final String returnType;
@@ -14,8 +16,10 @@ public final class Request implements Message.Payload, Serializable {
     private Request(Builder builder) {
         this.id = builder.id;
         this.clientId = builder.clientId;
+
         this.className = builder.className;
         this.methodName = builder.methodName;
+
         this.params = builder.params;
         this.paramTypes = builder.paramTypes;
         this.returnType = builder.returnType;
@@ -52,8 +56,10 @@ public final class Request implements Message.Payload, Serializable {
     public static class Builder {
         private String id;
         private String clientId;
+
         private String className;
         private String methodName;
+
         private Object[] params;
         private String[] paramTypes;
         private String returnType;
@@ -94,6 +100,10 @@ public final class Request implements Message.Payload, Serializable {
         }
 
         public Request build() {
+            if (className == null || methodName == null) {
+                throw new IllegalStateException("className and methodName required");
+            }
+
             return new Request(this);
         }
     }
