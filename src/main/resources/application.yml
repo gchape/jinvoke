@@ -5,12 +5,8 @@ spring:
 jinvoke:
   rpc:
     server:
-      boss: 1
-      worker: 3
-      backlog: 128
       host: localhost
       port: 8888
     client:
       host: localhost
       port: 8888
-      worker: 3

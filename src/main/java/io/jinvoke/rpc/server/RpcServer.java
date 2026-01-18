@@ -1,5 +1,7 @@
 package io.jinvoke.rpc.server;
 
+import io.jinvoke.rpc.codec.FrameDecoder;
+import io.jinvoke.rpc.codec.FrameEncoder;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -11,7 +13,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 public class RpcServer {
 
     static void main() {
-        new RpcServer().start();
+        new RpcServer()
+                .start();
     }
 
     public void start() {
@@ -28,7 +31,10 @@ public class RpcServer {
 
                         @Override
                         protected void initChannel(SocketChannel ch) {
-                            // TODO
+                            ch.pipeline()
+                                    .addLast("frameDecoder", new FrameDecoder())
+                                    .addLast("frameEncoder", new FrameEncoder())
+                                    .addLast("serverHandler", new ServerFrameHandler());
                         }
 
                     });
