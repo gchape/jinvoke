@@ -2,6 +2,7 @@ package io.jinvoke.rpc.protocol;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.UUID;
 
 public record Frame(
         String messageId,
@@ -10,66 +11,71 @@ public record Frame(
 ) implements Serializable {
 
     public Frame {
-        Objects.requireNonNull(messageId, "messageId cannot be null");
-        Objects.requireNonNull(type, "type cannot be null");
+        Objects.requireNonNull(messageId, "messageId required");
+        Objects.requireNonNull(type, "type required");
+        validatePayload(type, payload);
+    }
 
-        if (requiresPayload(type) && payload == null) {
-            throw new IllegalArgumentException(
-                    "Message type " + type + " requires a payload"
-            );
+    private static void validatePayload(Protocol.MessageType type, Protocol.Payload payload) {
+        boolean needsPayload = switch (type) {
+            case INVOKE, FORWARD, RESULT, REGISTER -> true;
+            case HEARTBEAT -> false;
+        };
+
+        if (needsPayload && payload == null) {
+            throw new IllegalArgumentException(type + " requires payload");
+        }
+        if (!needsPayload && payload != null) {
+            throw new IllegalArgumentException(type + " should not have payload");
         }
     }
 
-    private static boolean requiresPayload(Protocol.MessageType type) {
-        return type == Protocol.MessageType.INVOKE ||
-                type == Protocol.MessageType.FORWARD ||
-                type == Protocol.MessageType.RESULT;
+    public static Frame invoke(InvocationRequest request) {
+        return new Frame(request.requestId(), Protocol.MessageType.INVOKE, request);
     }
 
-    public static Frame newInvokeFrame(String messageId, InvocationRequest request) {
-        return new Frame(messageId, Protocol.MessageType.INVOKE, request);
-    }
-
-    public static Frame newForwardFrame(String messageId, InvocationRequest request) {
+    public static Frame forward(String messageId, InvocationRequest request) {
         return new Frame(messageId, Protocol.MessageType.FORWARD, request);
     }
 
-    public static Frame newResultFrame(String messageId, InvocationResult result) {
-        return new Frame(messageId, Protocol.MessageType.RESULT, result);
+    public static Frame result(InvocationResult result) {
+        return new Frame(result.requestId(), Protocol.MessageType.RESULT, result);
     }
 
-    public static Frame newRegisterFrame(String messageId) {
-        return new Frame(messageId, Protocol.MessageType.REGISTER, null);
+    public static Frame register(String clientId) {
+        return new Frame(newId(), Protocol.MessageType.REGISTER, new Registration(clientId));
     }
 
-    public static Frame newHeartbeatFrame(String messageId) {
-        return new Frame(messageId, Protocol.MessageType.HEARTBEAT, null);
+    public static Frame heartbeat() {
+        return new Frame(newId(), Protocol.MessageType.HEARTBEAT, null);
+    }
+
+    private static String newId() {
+        return UUID.randomUUID().toString();
     }
 
     public boolean hasPayload() {
         return payload != null;
     }
 
-    public boolean isRequest() {
-        return type == Protocol.MessageType.INVOKE ||
-                type == Protocol.MessageType.FORWARD;
-    }
-
-    public boolean isResponse() {
-        return type == Protocol.MessageType.RESULT;
-    }
-
     public InvocationRequest asRequest() {
-        if (!isRequest()) {
-            throw new IllegalStateException("Frame is not a request: " + type);
+        if (!(payload instanceof InvocationRequest req)) {
+            throw new IllegalStateException("Not a request frame: " + type);
         }
-        return (InvocationRequest) payload;
+        return req;
     }
 
     public InvocationResult asResult() {
-        if (!isResponse()) {
-            throw new IllegalStateException("Frame is not a response: " + type);
+        if (!(payload instanceof InvocationResult res)) {
+            throw new IllegalStateException("Not a result frame: " + type);
         }
-        return (InvocationResult) payload;
+        return res;
+    }
+
+    public Registration asRegistration() {
+        if (!(payload instanceof Registration reg)) {
+            throw new IllegalStateException("Not a registration frame: " + type);
+        }
+        return reg;
     }
 }

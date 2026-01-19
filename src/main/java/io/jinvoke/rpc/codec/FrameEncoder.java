@@ -18,7 +18,7 @@ public class FrameEncoder extends MessageToByteEncoder<Frame> {
                     ? JSON.toJSONBytes(frame.payload())
                     : new byte[0];
 
-            out.writeByte(frame.type().toOrdinal());
+            out.writeByte(frame.type().toByte());
             out.writeInt(payload.length);
 
             if (payload.length > 0) {

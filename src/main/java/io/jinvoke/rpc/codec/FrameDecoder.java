@@ -41,7 +41,7 @@ public class FrameDecoder extends ByteToMessageDecoder {
         }
 
         try {
-            Protocol.MessageType type = Protocol.MessageType.fromOrdinal(messageTypeByte);
+            Protocol.MessageType type = Protocol.MessageType.fromByte(messageTypeByte);
 
             byte[] payloadBytes = new byte[payloadLength];
             if (payloadLength > 0) {
@@ -79,8 +79,8 @@ public class FrameDecoder extends ByteToMessageDecoder {
 
     private Frame createControlFrame(Protocol.MessageType type) {
         return switch (type) {
-            case REGISTER -> Frame.newRegisterFrame(generateMessageId());
-            case HEARTBEAT -> Frame.newHeartbeatFrame(generateMessageId());
+            case REGISTER -> Frame.register(generateMessageId());
+            case HEARTBEAT -> Frame.heartbeat();
             default -> throw new IllegalArgumentException(
                     "Control frame type expected, got: " + type
             );

@@ -1,6 +1,5 @@
 package io.jinvoke.rpc.server;
 
-import io.jinvoke.rpc.protocol.Frame;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -8,11 +7,17 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SessionRegistry {
-    private static final Logger logger = LoggerFactory.getLogger(SessionRegistry.class);
+/**
+ * Registry for tracking active client sessions and pending requests
+ */
+public final class SessionRegistry {
+    private static final Logger log = LoggerFactory.getLogger(SessionRegistry.class);
 
+    // clientId -> client channel
     private static final Map<String, Channel> CLIENTS = new ConcurrentHashMap<>();
-    private static final Map<String, Frame> PENDING_REQUESTS = new ConcurrentHashMap<>();
+
+    // requestId -> origin client channel (who initiated the request)
+    private static final Map<String, Channel> REQUEST_ORIGINS = new ConcurrentHashMap<>();
 
     private SessionRegistry() {
     }
@@ -20,12 +25,12 @@ public class SessionRegistry {
     public static void registerClient(String clientId, Channel channel) {
         CLIENTS.put(clientId, channel);
         channel.closeFuture().addListener(f -> unregisterClient(clientId));
-        logger.info("Client registered: {}", clientId);
+        log.debug("Client registered: {}", clientId);
     }
 
     public static void unregisterClient(String clientId) {
         CLIENTS.remove(clientId);
-        logger.info("Client unregistered: {}", clientId);
+        log.debug("Client unregistered: {}", clientId);
     }
 
     public static Channel getClient(String clientId) {
@@ -37,22 +42,31 @@ public class SessionRegistry {
         return ch != null && ch.isActive();
     }
 
-    public static void trackRequest(Frame frame) {
-        String requestId = frame.asRequest().getRequestId();
-        PENDING_REQUESTS.put(requestId, frame);
-        logger.debug("Tracking request: {}", requestId);
+    public static void trackRequest(String requestId, Channel originClient) {
+        REQUEST_ORIGINS.put(requestId, originClient);
+        log.debug("Tracking request: {}", requestId);
     }
 
-    public static Frame getRequest(String requestId) {
-        return PENDING_REQUESTS.get(requestId);
+    public static Channel getOriginClient(String requestId) {
+        return REQUEST_ORIGINS.get(requestId);
     }
 
     public static void removeRequest(String requestId) {
-        PENDING_REQUESTS.remove(requestId);
+        REQUEST_ORIGINS.remove(requestId);
+        log.debug("Removed request: {}", requestId);
+    }
+
+    public static int clientCount() {
+        return CLIENTS.size();
+    }
+
+    public static int pendingRequestCount() {
+        return REQUEST_ORIGINS.size();
     }
 
     public static void clear() {
-        PENDING_REQUESTS.clear();
+        REQUEST_ORIGINS.clear();
         CLIENTS.clear();
+        log.info("Registry cleared");
     }
 }
