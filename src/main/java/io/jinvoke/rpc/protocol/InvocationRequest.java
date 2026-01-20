@@ -42,7 +42,6 @@ public record InvocationRequest(
         );
     }
 
-    // Defensive copies
     @Override
     public Object[] params() {
         return params.clone();

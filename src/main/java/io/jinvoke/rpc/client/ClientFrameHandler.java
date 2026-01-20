@@ -64,6 +64,7 @@ public class ClientFrameHandler extends SimpleChannelInboundHandler<Frame> {
         return method.invoke(instance, request.params());
     }
 
+    @SuppressWarnings("unchecked")
     private void handleResult(Frame frame) {
         InvocationResult result = frame.asResult();
         CompletableFuture<Object> future =

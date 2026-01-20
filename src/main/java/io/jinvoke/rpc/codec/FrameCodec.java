@@ -11,6 +11,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+import static io.jinvoke.rpc.protocol.Protocol.MessageType.HEARTBEAT;
+
 /**
  * Combined Frame encoder/decoder for Netty pipeline.
  * Format: [type:1][length:4][payload:n]
@@ -74,11 +76,12 @@ public class FrameCodec extends ByteToMessageCodec<Frame> {
 
     private Frame decodeFrame(Protocol.MessageType type, ByteBuf in, int length) {
         if (length == 0) {
-            return switch (type) {
-                case HEARTBEAT -> Frame.heartbeat();
-                default -> throw new IllegalArgumentException(
+            if (type == HEARTBEAT) {
+                return Frame.heartbeat();
+            } else {
+                throw new IllegalArgumentException(
                         "Empty payload not allowed for " + type);
-            };
+            }
         }
 
         byte[] bytes = new byte[length];
