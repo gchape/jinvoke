@@ -76,7 +76,6 @@ public class RpcClient implements SmartInitializingSingleton {
             channel = future.channel();
             log.info("Connected to {}:{}", host, port);
 
-            // Register with server
             channel.writeAndFlush(Frame.register(clientId))
                     .addListener(f -> {
                         if (f.isSuccess()) {
@@ -153,7 +152,6 @@ public class RpcClient implements SmartInitializingSingleton {
         log.info("RPC Client shutdown");
     }
 
-    // Setters for Spring
     public void setClientId(String clientId) {
         this.clientId = clientId;
     }
